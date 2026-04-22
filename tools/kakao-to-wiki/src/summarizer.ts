@@ -25,7 +25,9 @@ async function summarizeChunk(chunk: Message[], index: number, total: number): P
     messages: [
       {
         role: 'user',
-        content: `다음은 카카오톡 대화의 일부입니다. 실질적인 정보, 논의 내용, 결정 사항만 한국어로 3~5줄 요약해주세요. 인사나 감탄사 등 노이즈는 제외하세요.\n\n${formatChunk(chunk)}`,
+        content: `다음은 AI/개발 정보 공유 카카오톡 채팅방의 대화 일부입니다.
+AI, 머신러닝, 개발 도구, 프레임워크, 논문, 서비스, 트렌드에 관한 정보만 한국어로 3~5줄 요약해주세요.
+일상 대화, 인사, 감탄사, 관련 없는 잡담은 완전히 무시하세요. 관련 내용이 없으면 "없음"이라고만 답하세요.\n\n${formatChunk(chunk)}`,
       },
     ],
   });
@@ -56,21 +58,22 @@ export async function summarize(messages: Message[]): Promise<SummaryResult> {
     messages: [
       {
         role: 'user',
-        content: `다음은 카카오톡 대화를 청크별로 요약한 내용입니다. 전체 대화의 최종 마크다운 요약을 생성해주세요.
+        content: `다음은 AI/개발 정보 공유 카카오톡 채팅방의 청크별 요약입니다.
+AI, 개발 관련 내용만 추려서 최종 마크다운 요약을 생성해주세요. "없음"으로 표시된 청크는 무시하세요.
 
 아래 섹션을 반드시 포함하세요:
 
 ## 주요 주제
-(대화에서 다룬 주요 주제 bullet)
+(다룬 AI/개발 주제 bullet)
 
 ## 핵심 인사이트
-(중요한 정보, 결정 사항, 인사이트 bullet)
+(언급된 도구·모델·논문·서비스·팁 등 실질적 정보 bullet)
 
 ## 리소스
-(언급된 링크·도구·책·영상 등. 없으면 "없음")
+(언급된 링크·논문·GitHub·영상 등. 없으면 "없음")
 
 ## Tags
-(wiki frontmatter에 쓸 태그. 소문자 영어, 콤마 구분. 예: llm, productivity, career)
+(wiki frontmatter에 쓸 태그. 소문자 영어, 콤마 구분. 예: llm, rag, fine-tuning, open-source)
 
 ---
 
