@@ -65,14 +65,44 @@ ${result.summary}`;
   return `sources/${fileName}`;
 }
 
-function upsertConceptFile(conceptName: string, sourceRef: string): void {
+async function generateConceptContent(conceptName: string, summary: string): Promise<{ body: string; tags: string[] }> {
+  const displayName = conceptName.replace(/_/g, ' ');
+  const res = await client.messages.create({
+    model: MODEL,
+    max_tokens: 800,
+    messages: [
+      {
+        role: 'user',
+        content: `다음 요약에서 "${displayName}" 개념에 관련된 핵심 내용을 추출해 위키 페이지 본문을 작성하세요.
+
+규칙:
+- 마크다운 형식, 한국어 작성
+- ## 섹션으로 구조화
+- 소스에서 확인된 내용만 작성 (추측 금지)
+- 태그 목록도 콤마 구분으로 마지막 줄에 출력: TAGS: tag1, tag2
+
+요약:
+${summary}
+
+본문만 출력하세요 (frontmatter, 제목 H1 제외):`,
+      },
+    ],
+  });
+
+  const raw = (res.content[0] as { text: string }).text;
+  const tagsMatch = raw.match(/^TAGS:\s*(.+)$/m);
+  const tags = tagsMatch ? tagsMatch[1].split(',').map((t) => t.trim()) : [];
+  const body = raw.replace(/^TAGS:.*$/m, '').trim();
+  return { body, tags };
+}
+
+async function upsertConceptFile(conceptName: string, sourceRef: string, summary: string): Promise<void> {
   const fileName = `${conceptName}.md`;
   const filePath = wikiPath('concepts', fileName);
 
   if (fs.existsSync(filePath)) {
     const existing = fs.readFileSync(filePath, 'utf-8');
     if (!existing.includes(sourceRef)) {
-      // Sources 섹션이 있으면 거기에 추가, 없으면 파일 끝에 추가
       const updated = existing.includes('## Sources')
         ? existing.replace(/## Sources/, `## Sources\n- [[${sourceRef}]]`)
         : existing + `\n\n## Sources\n\n- [[${sourceRef}]]\n`;
@@ -81,15 +111,16 @@ function upsertConceptFile(conceptName: string, sourceRef: string): void {
     }
   } else {
     const displayName = conceptName.replace(/_/g, ' ');
+    const { body, tags } = await generateConceptContent(conceptName, summary);
     const content = `---
-tags: []
+tags: [${tags.join(', ')}]
 date: ${today()}
 source_count: 1
 ---
 
 # ${displayName}
 
-> 카카오톡 채팅 요약에서 추출된 개념입니다. 내용을 직접 보강해주세요.
+${body}
 
 ## Sources
 
@@ -143,7 +174,7 @@ export async function ingest(csvPath: string, result: SummaryResult): Promise<vo
   console.log('  개념 추출 중...');
   const concepts = await extractConcepts(result.summary);
   for (const concept of concepts) {
-    upsertConceptFile(concept, sourceRef);
+    await upsertConceptFile(concept, sourceRef, result.summary);
   }
 
   updateIndex(slug, sourceRef, result.tags);
