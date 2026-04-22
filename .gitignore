@@ -1,0 +1,14 @@
+# 원본 소스 파일 (개인정보 보호)
+raw/*
+!raw/.gitkeep
+
+# 환경변수 (API 키)
+.env
+tools/kakao-to-wiki/.env
+
+# 빌드 산출물
+tools/kakao-to-wiki/dist/
+tools/kakao-to-wiki/node_modules/
+
+# OS
+.DS_Store
